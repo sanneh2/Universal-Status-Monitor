@@ -9,25 +9,39 @@ const port = process.env.PORT || 3000;
 const statuspageApiKey = process.env.STATUSPAGE_API_KEY;
 const pageId = process.env.PAGE_ID;
 
-const magicBellApiUrl = "https://api.magicbell.com/notifications";
+const magicBellApiUrl = "https://api.magicbell.com/metrics";
 const magicBellComponentId = "cmjt8jfdfc9s";
 const headers = {
   "X-MAGICBELL-API-SECRET": process.env.MAGICBELL_API_SECRET,
   "X-MAGICBELL-API-KEY": process.env.MAGICBELL_API_KEY,
 };
 
+// Function to get the current date in the required format (YYYY-MM-DD)
+function getCurrentDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 // Function to update Statuspage incident
 async function updateStatuspageIncident(status, components) {
+  const patchData = {
+    component: {
+      description: "Intervalno posodabljanje stanja naročniškega sistema",
+      status: status, // Use a dynamic status
+      name: "Stanje naročniškega sistema je bilo posodobljeno",
+      only_show_if_degraded: true,
+      group_id: null,
+      showcase: true,
+      start_date: getCurrentDate(), // Use the current date in the correct format
+    },
+  };
   try {
-    const response = await axios.post(
-      `https://api.statuspage.io/v1/pages/${pageId}/incidents`,
-      {
-        incident: {
-          name: "Stanje naročniškega sistema je bilo posodobljeno",
-          status,
-          components,
-        },
-      },
+    const response = await axios.put(
+      `https://api.statuspage.io/v1/pages/${pageId}/components/${magicBellComponentId}`,
+      patchData,
       {
         headers: {
           Authorization: `OAuth ${statuspageApiKey}`,
@@ -39,6 +53,9 @@ async function updateStatuspageIncident(status, components) {
     console.log("Statuspage Incident Updated:", response.data);
   } catch (error) {
     console.error("Error updating Statuspage Incident:", error.message);
+    if (error.response) {
+      console.error("API Response:", error.response.data);
+    }
   }
 }
 
