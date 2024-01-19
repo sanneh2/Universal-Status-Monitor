@@ -1,5 +1,5 @@
 {
-  "name": "Universal Status Monitor",
+  "name": "universal-status-monitor",
   "version": "1.0.0",
   "description": "A services monitor that uses Atlassian API to update the Status Page automatically",
   "main": "server.js",
