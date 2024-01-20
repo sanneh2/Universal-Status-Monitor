@@ -266,12 +266,58 @@ async function monitorApiStatusMiddleware(req, res, next) {
 // Schedule the cron job to run the monitor status check every 12 minutes
 // Using node-cron
 // ### MONITOR
-cron.schedule("*/12 * * * *", () => {
+cron.schedule("*/12 * * * *", async () => {
   console.log("#############################################");
   console.log(" Running scheduled monitoring [every 12 minutes]");
   console.log("#############################################");
 
-  monitorApiStatusMiddleware(); // Call your middleware function
+  const status = await checkStatus(magicBellApiUrl, magicBellHeaders);
+
+  // 2.) Create new incident on Statuspage
+  // Params: title, status,  componentStatus
+  if (status !== 200 && status !== 500) {
+    // 200 === OK, 500 === Internal Server Error
+    // Service is down, Alert everyone with status "Investigating" and mark component as "Major Outage" on Statuspage
+    console.info(magicBellApiUrl, "Service is down");
+    // Choose a title for your incident
+    const title = process.env.INCIDENT_TITLE;
+
+    const response = await createNewIncident(
+      title,
+      "investigating",
+      "major_outage",
+      myComponentId // your component id on Statuspage
+    );
+    if (response.data.incident.id) {
+      console.info("Incident created");
+    }
+    // Capture the incident ID from the response
+    else incidentId = response.data.incident.id;
+  } else {
+    if (status === 200) {
+      // Service is up
+
+      // Check if there is an ongoing incident
+      if (incidentId) {
+        console.info("Service is back up");
+        // Resolve the incident
+        console.info("Resolving incident");
+        const response = await resolveExistingIncident(
+          incidentId,
+          myComponentId
+        );
+        console.info(response);
+
+        // Reset the incident ID
+        incidentId = null;
+      } else {
+        // No incident ongoing
+        console.info("No incident ongoing");
+        // Create a new positive incident to show operational status
+        console.info("All systems operational");
+      }
+    }
+  }
 });
 
 // ##### DAILY SYSTEM HEALTH

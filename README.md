@@ -54,9 +54,13 @@ The server will start running on http://localhost:3000.
 
 ## Configuration
 
-`STATUSPAGE_API_KEY`: Your Atlassian Status Page API key.
-`PAGE_ID`: Your Atlassian Status Page ID.
-`SERVICE_API_URL`: The URL of the service API you want to monitor.
+- `STATUSPAGE_API_KEY`: Your Atlassian Status Page API key. \*\* important
+- `PAGE_ID`: Your Atlassian Status Page ID. \*\* important
+- `COMPONENT_ID`: Your Atlassian Status Page component ID (e.g., `c6ct8jfdfc9s`). \*\* important
+- `SERVICE_API_SECRET`: Your Magic Bell API secret key. (optional)
+- `SERVICE_API_KEY`: Your Magic Bell API key.(optional)
+- `INCIDENT_TITLE`: Title for incidents triggered when the service is down (e.g., `The magical elves you are looking for are not here`). (optional)
+- `RESOLUTION_TITLE`: Title for incidents when the service is resolved (e.g., `The service is back online!`). (optional)
 
 ## Templating and Extending
 
