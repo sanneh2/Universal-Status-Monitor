@@ -1,6 +1,5 @@
 const express = require("express");
 const axios = require("axios");
-const cron = require("node-cron");
 
 require("dotenv").config(); // Load environment variables from .env file
 const router = express.Router();
@@ -205,193 +204,138 @@ let incidentId = null;
 // Your middleware function to monitor API status
 async function monitorApiStatusMiddleware(req, res, next) {
   // 1.) Get Status
-  console.info("Checking status");
-  const status = await checkStatus(magicBellApiUrl, magicBellHeaders);
+  try {
+    console.info("Checking status");
+    const status = await checkStatus(magicBellApiUrl, magicBellHeaders);
 
-  // 2.) Create new incident on Statuspage
-  // Params: title, status,  componentStatus
-  if (status !== 200 && status !== 500) {
-    // 200 === OK, 500 === Internal Server Error
-    // Service is down, Alert everyone with status "Investigating" and mark component as "Major Outage" on Statuspage
-    console.info("Service is down");
-    // Choose a title for your incident
-    const title = process.env.INCIDENT_TITLE;
+    // 2.) Create new incident on Statuspage
+    // Params: title, status,  componentStatus
+    if (status !== 200 && status !== 500) {
+      // 200 === OK, 500 === Internal Server Error
+      // Service is down, Alert everyone with status "Investigating" and mark component as "Major Outage" on Statuspage
+      console.info("Service is down");
+      // Choose a title for your incident
+      const title = process.env.INCIDENT_TITLE;
 
-    const response = await createNewIncident(
-      title,
-      "investigating",
-      "major_outage",
-      myComponentId // your component id on Statuspage
-    );
-    if (response.data.incident.id) {
-      console.info("Incident created");
-    }
-    // Capture the incident ID from the response
-    else incidentId = response.data.incident.id;
-  } else {
-    if (status === 200) {
-      // Service is up
+      const response = await createNewIncident(
+        title,
+        "investigating",
+        "major_outage",
+        myComponentId // your component id on Statuspage
+      );
+      if (response.data.incident.id) {
+        console.info("Incident created");
+      }
+      // Capture the incident ID from the response
+      else incidentId = response.data.incident.id;
+    } else {
+      if (status === 200) {
+        // Service is up
 
-      // Check if there is an ongoing incident
-      if (incidentId) {
-        console.info("Service is back up");
-        // Resolve the incident
-        console.info("Resolving incident");
-        const response = await resolveExistingIncident(
-          incidentId,
-          myComponentId
-        );
-        console.info(response);
+        // Check if there is an ongoing incident
+        if (incidentId) {
+          console.info("Service is back up");
+          // Resolve the incident
+          console.info("Resolving incident");
+          const response = await resolveExistingIncident(
+            incidentId,
+            myComponentId
+          );
+          console.info(response);
 
-        // Reset the incident ID
-        incidentId = null;
-      } else {
-        // No incident ongoing
-        console.info("No incident ongoing");
-        // Create a new positive incident to show operational status
-        console.info("All systems operational");
+          // Reset the incident ID
+          incidentId = null;
+        } else {
+          // No incident ongoing
+          console.info("No incident ongoing");
+          // Create a new positive incident to show operational status
+          console.info("All systems operational");
+        }
       }
     }
-  }
-  res.status(200).send("mOniToRed"); // Send a response to the client
+    res.status(200).send("mOniToRed"); // Send a response to the client
 
-  next(); // Move to the next middleware or route handler
+    next(); // Move to the next middleware or route handler
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
+  }
 }
 
-// ##############################################################################################################
-// ##############################################################################################################
-// ### CRON \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-// ##############################################################################################################
-
-// Schedule the cron job to run the monitor status check every 12 minutes
-// Using node-cron
-// ### MONITOR
-cron.schedule("*/12 * * * *", async () => {
-  console.log("#############################################");
-  console.log(" Running scheduled monitoring [every 12 minutes]");
-  console.log("#############################################");
-
-  const status = await checkStatus(magicBellApiUrl, magicBellHeaders);
-
-  // 2.) Create new incident on Statuspage
-  // Params: title, status,  componentStatus
-  if (status !== 200 && status !== 500) {
-    // 200 === OK, 500 === Internal Server Error
-    // Service is down, Alert everyone with status "Investigating" and mark component as "Major Outage" on Statuspage
-    console.info(magicBellApiUrl, "Service is down");
-    // Choose a title for your incident
-    const title = process.env.INCIDENT_TITLE;
-
-    const response = await createNewIncident(
-      title,
-      "investigating",
-      "major_outage",
-      myComponentId // your component id on Statuspage
-    );
-    if (response.data.incident.id) {
-      console.info("Incident created");
-    }
-    // Capture the incident ID from the response
-    else incidentId = response.data.incident.id;
-  } else {
-    if (status === 200) {
-      // Service is up
-
-      // Check if there is an ongoing incident
-      if (incidentId) {
-        console.info("Service is back up");
-        // Resolve the incident
-        console.info("Resolving incident");
-        const response = await resolveExistingIncident(
-          incidentId,
-          myComponentId
-        );
-        console.info(response);
-
-        // Reset the incident ID
-        incidentId = null;
-      } else {
-        // No incident ongoing
-        console.info("No incident ongoing");
-        // Create a new positive incident to show operational status
-        console.info("All systems operational");
-      }
-    }
-  }
-});
-
 // ##### DAILY SYSTEM HEALTH
-// This posts a new incident every day at 6:00 AM GMT+2 saying "All Systems Operational" if there is no incident ongoing
+// This posts a new incident  saying "All Systems Operational" if there is no incident ongoing
 // This is to show that the system is healthy and operational and not just "no incidents" on the statuspage
-// It must be independent of the monitor cron job
-cron.schedule("0 4 * * *", async () => {
-  console.log(
-    "###########################################################################################"
-  );
 
-  console.log(
-    " Running scheduled daily system health check [every day at 6:00 AM GMT+2]"
-  );
-  console.log(
-    "############################################################################################"
-  );
+async function dailyMonitorReportMiddleware(req, res, next) {
+  console.log("####################################################");
+
+  console.log(" Performing independent daily system health check ");
+  console.log("#####################################################");
 
   if (incidentId) return; // If there is an ongoing incident, do nothing
 
-  // 1.) Get Status
-  console.info("Performing independent daily system health check");
-  const status = await checkStatus(magicBellApiUrl, magicBellHeaders);
+  try {
+    // 1.) Get Status
+    console.info("Performing independent daily system health check");
+    const status = await checkStatus(magicBellApiUrl, magicBellHeaders);
 
-  // 2.) Create new incident on Statuspage
-  // Params: title, status,  componentStatus
-  if (status !== 200 && status !== 500) {
-    // 200 === OK, 500 === Internal Server Error
-    // Service is down, Alert everyone with status "Investigating" and mark component as "Major Outage" on Statuspage
-    console.info(magicBellApiUrl, "Service is down");
-    // Choose a title for your incident
-    const title = process.env.INCIDENT_TITLE;
+    // 2.) Create new incident on Statuspage
+    // Params: title, status,  componentStatus
+    if (status !== 200 && status !== 500) {
+      // 200 === OK, 500 === Internal Server Error
+      // Service is down, Alert everyone with status "Investigating" and mark component as "Major Outage" on Statuspage
+      console.info(magicBellApiUrl, "Service is down");
+      // Choose a title for your incident
+      const title = process.env.INCIDENT_TITLE;
 
-    const response = await createNewIncident(
-      title,
-      "investigating",
-      "major_outage",
-      myComponentId // your component id on Statuspage
-    );
-    if (response.data.incident.id) {
-      console.info("Incident created");
-    }
-    // Capture the incident ID from the response
-    else incidentId = response.data.incident.id;
-  } else {
-    if (status === 200) {
-      // Service is up
+      const response = await createNewIncident(
+        title,
+        "investigating",
+        "major_outage",
+        myComponentId // your component id on Statuspage
+      );
+      if (response.data.incident.id) {
+        console.info("Incident created");
+      }
+      // Capture the incident ID from the response
+      else incidentId = response.data.incident.id;
+    } else {
+      if (status === 200) {
+        // Service is up
 
-      // Check if there is an ongoing incident
-      if (incidentId) {
-        console.info("Service is back up");
-        // Resolve the incident
-        console.info("Resolving incident");
-        const response = await resolveExistingIncident(
-          incidentId,
-          myComponentId
-        );
-        console.info(response);
+        // Check if there is an ongoing incident
+        if (incidentId) {
+          console.info("Service is back up");
+          // Resolve the incident
+          console.info("Resolving incident");
+          const response = await resolveExistingIncident(
+            incidentId,
+            myComponentId
+          );
+          console.info(response);
 
-        // Reset the incident ID
-        incidentId = null;
-      } else {
-        // No incident ongoing
-        console.info("No incident ongoing");
-        // Create a new positive incident to show operational status
-        console.info("All systems operational");
-        const response = await createAllSystemsOperationalIncident(
-          myComponentId
-        );
-        console.info(response);
+          // Reset the incident ID
+          incidentId = null;
+        } else {
+          // No incident ongoing
+          console.info("No incident ongoing");
+          // Create a new positive incident to show operational status
+          console.info("All systems operational");
+          const response = await createAllSystemsOperationalIncident(
+            myComponentId
+          );
+          console.info(response);
+        }
       }
     }
+    res.status(200).send("Daily incident report performed gracefully"); // Send a response to the client
+    next(); // Move to the next middleware or route handler
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
+    next(); // Move to the next middleware or route handler
   }
-});
+}
 
 // ##############################################################################################################
 // ##############################################################################################################
@@ -400,17 +344,21 @@ cron.schedule("0 4 * * *", async () => {
 
 // Use the router for the "cron" route
 // When you visit or ping your server at /cron, it will trigger the middleware ( run the monitor )
+
 // #### MONITOR ROUTE ####
 router.use("/cron", monitorApiStatusMiddleware);
+
+// #### DAILY SYSTEM HEALTH ROUTE ####
+router.use("/daily", dailyMonitorReportMiddleware);
 
 // This is for some jokesters out there
 router.get("/", (req, res) => {
   res.send(
-    "<div style='display:flex; flex-direction:column;'><h1 style='color: #FF6EC7; font-size: 3rem;'>Turn back. Nothing to see here. Move along. Move along.</h1><ul style='font-size:2rem'> <li><a href='/cron'> /cron Monitoring </a></li> <li> <a href='/health'> /health This server health </a> </li> </ul> </div>"
+    "<div style='display:flex; flex-direction:column;'><h1 style='color: #FF6EC7; font-size: 3rem;'>Turn back. Nothing to see here. Move along. Move along.</h1><ul style='font-size:2rem'> <li><a href='/cron'> /cron Monitoring (set a 15 minute cron to this route) </a></li> <li> <a href='/health'> /health This server health </a> </li> <li> <a href='/daily'> /daily Share an incident report saying 'All Systems Operational' (set a cron once a day) </a> </li> </ul> </div>"
   );
 });
 
-// Health check
+// ### SERVER Health check
 router.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
