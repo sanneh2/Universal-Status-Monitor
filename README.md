@@ -66,6 +66,35 @@ This monitor is highly extensible and can be easily templated to monitor various
 
 To automate status updates, schedule a cron job to run the monitor at regular intervals:
 
+# Atlassian Statuspage Automation
+
+Automate the management of incidents on Atlassian Statuspage using Node.js and cron jobs.
+
+## Features
+
+1. **Incident Creation and Resolution**
+
+   - Automatically create and resolve incidents on Atlassian Statuspage based on the status of your monitored API.
+
+2. **Daily System Health Check**
+
+   - Perform a daily system health check, creating an incident on Atlassian Statuspage if necessary, to showcase the system's operational status.
+
+3. **Independent Daily Health Check**
+
+   - Ensure the daily system health check is independent of the regular monitoring cron job, providing a comprehensive overview of the system's health.
+
+4. **Memory Storage of Incident ID**
+
+   - Utilize in-memory storage to keep track of the ongoing incident ID while the server is running.
+
+5. **RESTful Endpoints**
+
+   - Expose RESTful endpoints for triggering the middleware and checking the server's health.
+
+6. **User-Friendly Routes**
+   - Easy-to-use routes for navigating and triggering essential functionalities.
+
 ## Contributing
 
 Feel free to contribute to improve and extend the capabilities of this universal status monitor. Open issues or submit pull requests.
