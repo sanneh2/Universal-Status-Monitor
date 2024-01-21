@@ -1,108 +1,125 @@
 # 🚀 Universal Status Monitor
 
-**A versatile Node.js server for monitoring various services and automatically updating Atlassian Status Page components.**
+**This Node.js application serves as a service status monitor, allowing you to check the status of various services, including APIs and MongoDB. It interacts with Atlassian Statuspage to report service incidents.**
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Endpoints](#endpoints)
+- [Server Health Check](#server-health-check)
+- [License](#license)
 
 ## Overview
 
-This Node.js server is designed to be a universal status monitor, providing a flexible solution for monitoring different services and updating the Atlassian Status Page component accordingly. It supports templating, allowing you to easily adapt it to monitor various services of your choice.
-
-## Prerequisites
-
-Before using the monitor, ensure you have the following:
-
-- Node.js installed
-- API credentials for the services you want to monitor
-- Atlassian Status Page API key and page ID
+This service status monitor is built using Node.js and Express. It checks the status of configured services, such as APIs and MongoDB, and reports incidents to Atlassian Statuspage. The monitoring can be triggered through a cron job.
 
 ## Getting Started
 
-1. Clone this repository:
+### Prerequisites
+
+- Node.js
+- npm (Node Package Manager)
+- Atlassian Statuspage account with API key and page ID
+- MongoDB URI (if monitoring MongoDB)
+
+### Installation
+
+1. Clone the repository:
 
 ```bash
-   git clone https://github.com/sanneh2/universal-status-monitor.git
+git clone <repository_url>
 ```
 
-2. Navigate to the project directory:
+## Install dependencies:
 
 ```bash
 cd universal-status-monitor
-```
-
-3. Install dependencies:
-
-```bash
 npm install
 ```
 
-4. Create a .env file in the project root and set the following environment variables:
+Create a .env file in the project root and set the necessary environment variables:
 
 ```env
-STATUSPAGE_API_KEY=your_atlassian_statuspage_api_key
-PAGE_ID=your_atlassian_statuspage_page_id
-SERVICE_API_URL=your_service_api_url
+STATUSPAGE_API_KEY=<your_statuspage_api_key> #required for Atlassian Statuspage
+PAGE_ID=<your_statuspage_page_id> # Your Statuspage ID
+MONGODB_URI=<your_mongodb_uri> # (if monitoring MongoDB)
 ```
 
-Replace placeholders with your actual values.
-
-5. Run the server:
+Usage
+To run the service status monitor, use the following command:
 
 ```bash
 npm start
 ```
 
-The server will start running on http://localhost:3000.
+This will start the server and connect to MongoDB (if applicable).
 
 ## Configuration
 
-- `STATUSPAGE_API_KEY`: Your Atlassian Status Page API key. \*\* important
-- `PAGE_ID`: Your Atlassian Status Page ID. \*\* important
-- `COMPONENT_ID`: Your Atlassian Status Page component ID (e.g., `c6ct8jfdfc9s`). \*\* important
-- `SERVICE_API_SECRET`: Your Magic Bell API secret key. (optional)
-- `SERVICE_API_KEY`: Your Magic Bell API key.(optional)
-- `INCIDENT_TITLE`: Title for incidents triggered when the service is down (e.g., `The magical elves you are looking for are not here`). (optional)
-- `RESOLUTION_TITLE`: Title for incidents when the service is resolved (e.g., `The service is back online!`). (optional)
+# Services To Monitor
 
-## Templating and Extending
+Edit the config/configuration.js file to add or remove services to monitor.
+Each service configuration includes a checkFunction for custom status checks.
 
-This monitor is highly extensible and can be easily templated to monitor various services. Simply modify the updateStatuspageIncident function in server.js to adapt it to your specific service's API response.
+# Services
 
-## Automation with Cron
+The services themselves can be found in the services/ folder. There are a few examples there
 
-To automate status updates, schedule a cron job to run the monitor at regular intervals:
+- API / web endpoint (GET request to URL with a status code 200 response)
+- API with credentials and Authorization headers (optional headers)
+- MongoDB connection with URI and ping the connection
 
-# Atlassian Statuspage Automation
+## Atlassian Statuspage
 
-Automate the management of incidents on Atlassian Statuspage using Node.js and cron jobs.
+Ensure you have a valid Atlassian Statuspage account and obtain the API key and page ID. Set these values in the .env file.
 
-## Features
+These functions interact with Atlassian Statuspage using the provided API key, page ID, and axios for making HTTP requests.
 
-1. **Incident Creation and Resolution**
+# Core Functionality
 
-   - Automatically create and resolve incidents on Atlassian Statuspage based on the status of your monitored API.
+The core functionality of this service status monitor includes creating, resolving, and handling incidents on Atlassian Statuspage. It provides the following key features:
 
-2. **Daily System Health Check**
+# Incident Handling
 
-   - Perform a daily system health check, creating an incident on Atlassian Statuspage if necessary, to showcase the system's operational status.
+handleServiceStatus(status, service): Universal function that handles multiple service incidents by IDs. It can create new incidents and resolve existing ones based on the provided status and service information.
 
-3. **Independent Daily Health Check**
+# Incident Creation and Resolution
 
-   - Ensure the daily system health check is independent of the regular monitoring cron job, providing a comprehensive overview of the system's health.
+createNewIncident(title, status, componentStatus, componentId): Creates a new incident on Atlassian Statuspage with the specified title, status, component status, and component ID.
 
-4. **Memory Storage of Incident ID**
+resolveExistingIncident(incidentId, componentId): Resolves an existing incident on Atlassian Statuspage with the given incident ID and component ID.
 
-   - Utilize in-memory storage to keep track of the ongoing incident ID while the server is running.
+createAllSystemsOperationalIncident(componentIds, body): Creates a special incident named "All Systems Operational" with a detailed status report for each specified component ID.
 
-5. **RESTful Endpoints**
+## Server Implementation
 
-   - Expose RESTful endpoints for triggering the middleware and checking the server's health.
+The server implementation uses Express.js to handle endpoints for service monitoring and system health checks.
 
-6. **User-Friendly Routes**
-   - Easy-to-use routes for navigating and triggering essential functionalities.
+# Endpoints
 
-## Contributing
+/cron: Endpoint for the cron job to trigger service monitoring. Recommended every 10-15 minutes.
 
-Feel free to contribute to improve and extend the capabilities of this universal status monitor. Open issues or submit pull requests.
+/daily: Endpoint for the daily system health check. Posts an incident report saying "All Systems Operational." (Recommended every 24 hours at a set time)
+
+/health: Endpoint for the server health check.
+
+# Middleware
+
+monitorMiddleware(req, res, next): Middleware function for monitoring service status. Checks the status of configured services and reports incidents to Atlassian Statuspage.
+
+dailyReportMiddleware(req, res, next): Middleware function for the daily system health check. Posts an incident report saying "All Systems Operational" if all services are operational.
+
+## Environment Variables:
+
+Set the necessary environment variables in the .env file, including the Atlassian Statuspage API key, page ID, and MongoDB URI (if applicable).
+
+# Server Health Check
+
+Visit /health to check the health of the server. It should respond with "OK" if the server is running.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.
