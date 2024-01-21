@@ -5,8 +5,8 @@ const exampleApiUrl = "https://google.com";
 
 // Authorization headers if you need to authenticate
 const exampleApiHeaders = {
-  "API-API-SECRET": process.env.MAGICBELL_API_SECRET,
-  "API-API-KEY": process.env.MAGICBELL_API_KEY,
+  "API-API-SECRET": "YOUR_API_SECRET",
+  "API-API-KEY": "YOUR_API_KEY",
 };
 
 const exampleComponentId = "bx55ff85b5gq";
