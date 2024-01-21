@@ -14,10 +14,10 @@ The monitoring can be triggered through a cron job with a free independent servi
 
 ## Features
 
-Create an incident automatically for the Statuspage component you are monitoring.
-Keep a track of the incidents and resolve them automatically if the service comes back in the next periodic check.
-Create a daily "Full System Report" incident with the status "Resolved" and "All Systems Operational" title and detailed report in the body (as in the image)
-Add a lot of your own services quickly into the automated flow and restart the server
+- Create an incident automatically for the Statuspage component you are monitoring.
+- Keep a track of the incidents and resolve them automatically if the service comes back in the next periodic check.
+- Create a daily "Full System Report" incident with the status "Resolved" and "All Systems Operational" title and detailed report in the body (as in the image)
+- Add a lot of your own services quickly into the automated flow and restart the server
 
 ## Getting Started
 
