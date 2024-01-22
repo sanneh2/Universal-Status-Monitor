@@ -157,7 +157,5 @@ app.use(router);
 // Start the server and connect to MongoDB on startup
 app.listen(port, () => {
   console.info(`Server is running on http://localhost:${port}`);
-  if(process.env.MONGODB_URI) { // If using MongoDB tracking service
-  connectToMongoDB();
-  }
+  connectToMongoDB(); // Remove this and mongoDbService in config/configuration.js if you dont need it
 });
