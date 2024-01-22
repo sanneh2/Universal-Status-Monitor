@@ -10,7 +10,7 @@ const exampleIncidentTitle = "API Example is down";
 const apiExampleService = {
   name: exampleServiceName,
   title: exampleIncidentTitle,
-  checkFunction: checkStatusFunction(exampleApiUrl), // use await here
+  checkFunction: checkStatusFunction(exampleApiUrl),
   componentId: exampleComponentId,
 };
 
